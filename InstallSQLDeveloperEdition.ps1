@@ -1,10 +1,14 @@
 $isoLocation = ## Put the location here
 $pathToConfigurationFile = ## Path to original file here
 $copyFileLocation = "C:\Temp\ConfigurationFile.ini"
+$errorOutputFile = "C:\Temp\ErrorOutput.txt"
+$standardOutputFile = "C:\Temp\StandardOutput.txt"
 
 Write-Host "Copying the ini file"
 
 New-Item "C:\Temp" -ItemType "Directory" -Force 
+Remove-Item $errorOutputFile -Force
+Remove-Item $standardOutputFile -Force
 Copy-Item $pathToConfigurationFile $copyFileLocation -Force
 
 Write-Host "Getting the name of the current user to replace in the copy ini file" 
@@ -13,7 +17,7 @@ $user = "$env:UserDomain\$env:USERNAME"
 
 write-host $user
 
-Write-Host "Replacing the placehold user name with your username"
+Write-Host "Replacing the placeholder user name with your username"
 $replaceText = (Get-Content -path $copyFileLocation -Raw) -replace "##MyUser##", $user
 Set-Content $copyFileLocation $replaceText
 
@@ -30,8 +34,16 @@ foreach ($disk in $disks){
 if ($driveLetter)
 {
     Write-Host "Starting the install of SQL Server"
-    Start-Process $driveLetter\Setup.exe "/ConfigurationFile=$copyFileLocation" -Wait
+    Start-Process $driveLetter\Setup.exe "/ConfigurationFile=$copyFileLocation" -Wait -RedirectStandardOutput $standardOutputFile -RedirectStandardError $errorOutputFile
 }
+
+$standardOutput = Get-Content $standardOutputFile -Delimiter "\r\n"
+
+Write-Host $standardOutput
+
+$errorOutput = Get-Content $errorOutputFile -Delimiter "\r\n"
+
+Write-Host $errorOutput
 
 Write-Host "Dismounting the drive"
 
